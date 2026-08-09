@@ -1,0 +1,13 @@
+date,storeId,storeName,productId,productName,category,quantity,revenue,unitCost,latitude,longitude
+2026-08-01,STR-001,Sharma Kirana Indiranagar,PRD-K01,Organic South Indian Filter Coffee 500g,Grocery,12,3600,180,12.9716,77.5946
+2026-08-01,STR-001,Sharma Kirana Indiranagar,PRD-K02,A2 Desi Cow Ghee 1L,Grocery,8,9600,800,12.9716,77.5946
+2026-08-02,STR-001,Sharma Kirana Indiranagar,PRD-K03,Herbal Immunity Green Tea 250g,Grocery,15,4500,160,12.9716,77.5946
+2026-08-02,STR-001,Sharma Kirana Indiranagar,PRD-K04,Handcrafted Brass Diya Set (Pre-Diwali),Home Decor,5,2500,280,12.9716,77.5946
+2026-08-03,STR-001,Sharma Kirana Indiranagar,PRD-K01,Organic South Indian Filter Coffee 500g,Grocery,10,3000,180,12.9716,77.5946
+2026-08-04,STR-001,Sharma Kirana Indiranagar,PRD-K05,Raw Organic Honey 500g,Grocery,18,6300,220,12.9716,77.5946
+2026-08-05,STR-001,Sharma Kirana Indiranagar,PRD-K02,A2 Desi Cow Ghee 1L,Grocery,6,7200,800,12.9716,77.5946
+2026-08-06,STR-001,Sharma Kirana Indiranagar,PRD-K03,Herbal Immunity Green Tea 250g,Grocery,20,6000,160,12.9716,77.5946
+2026-08-07,STR-001,Sharma Kirana Indiranagar,PRD-K06,Whole Cashews & Almonds Gift Box,Confectionery,12,10800,550,12.9716,77.5946
+2026-08-08,STR-001,Sharma Kirana Indiranagar,PRD-K01,Organic South Indian Filter Coffee 500g,Grocery,15,4500,180,12.9716,77.5946
+2026-08-09,STR-001,Sharma Kirana Indiranagar,PRD-K05,Raw Organic Honey 500g,Grocery,10,3500,220,12.9716,77.5946
+2026-08-09,STR-001,Sharma Kirana Indiranagar,PRD-K06,Whole Cashews & Almonds Gift Box,Confectionery,8,7200,550,12.9716,77.5946

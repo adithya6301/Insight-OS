@@ -16,12 +16,12 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
+  '🪔 What products should we introduce for Diwali & seasonal trends?',
+  '🏷️ Which low-sales items need discounts and promotional offers?',
+  '⏳ Which products are expiring soon and need flash clearance?',
   '🔍 Why are stores underperforming?',
-  '⚠️ What are my top high-priority risks?',
   '📦 Which items are out of stock right now?',
-  '📢 What do you mean by local store promotions?',
-  '💰 Show my store profit margins',
-  '🚀 What growth opportunities exist?',
+  '💰 Show my store profit margins & growth opportunities',
 ];
 
 export default function AIChat({ insight, storePerformance, monthlyData }: AIChatProps) {

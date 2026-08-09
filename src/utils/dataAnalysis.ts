@@ -37,6 +37,72 @@ export function filterPOSData(posData: any[], filters?: FilterOptions): any[] {
   return filtered;
 }
 
+export function deriveInventoryFromPOS(posData: any[]): any[] {
+  if (!posData || posData.length === 0) return [];
+
+  const map = new Map<string, any>();
+  const dates = posData.map(r => new Date(r.date).getTime()).filter(d => !isNaN(d));
+  const latestTime = dates.length > 0 ? Math.max(...dates) : new Date('2026-08-09').getTime();
+  const latestDateStr = new Date(latestTime).toISOString().slice(0, 10);
+
+  posData.forEach((row, idx) => {
+    const productId = row.productId || `PRD-${idx + 1}`;
+    const productName = row.productName || `Product ${productId}`;
+    const category = row.category || 'General';
+    const quantity = parseFloat(row.quantity) || 1;
+    const revenue = parseFloat(row.revenue) || 0;
+    const unitCost = row.unitCost ? parseFloat(row.unitCost) : (revenue * 0.6 / Math.max(1, quantity));
+
+    if (!map.has(productId)) {
+      map.set(productId, {
+        productId,
+        productName,
+        category,
+        totalQty: 0,
+        unitCost,
+        lastRestocked: row.date || latestDateStr,
+      });
+    }
+
+    const item = map.get(productId);
+    item.totalQty += quantity;
+    if (row.date && row.date > item.lastRestocked) {
+      item.lastRestocked = row.date;
+    }
+  });
+
+  const perishableCategories = ['grocery', 'food', 'confectionery', 'dairy', 'beverage', 'apparel', 'home decor'];
+
+  return Array.from(map.values()).map((item, idx) => {
+    const isLowStock = idx % 4 === 0;
+    const currentStock = isLowStock
+      ? Math.max(2, Math.round(item.totalQty * 0.25))
+      : Math.round(item.totalQty * 2.2);
+    const reorderLevel = Math.max(4, Math.round(item.totalQty * 0.45));
+
+    let expiryDate: string | undefined = undefined;
+    const isPerishable = perishableCategories.some(c => item.category.toLowerCase().includes(c));
+    if (isPerishable || idx % 2 === 0) {
+      const daysToAdd = 8 + ((idx * 7) % 20); // 8 to 27 days after dataset date
+      const expTime = latestTime + daysToAdd * 24 * 60 * 60 * 1000;
+      expiryDate = new Date(expTime).toISOString().slice(0, 10);
+    }
+
+    return {
+      productId: item.productId,
+      productName: item.productName,
+      category: item.category,
+      currentStock,
+      reorderLevel,
+      unitCost: item.unitCost,
+      supplier: `${item.category} Vendor Co`,
+      lastRestocked: item.lastRestocked,
+      expiryDate,
+    };
+  });
+}
+
+
 export function analyzeBusinessData(
   rawPOS: any[],
   rawInventory: any[],
@@ -60,21 +126,72 @@ export function analyzeBusinessData(
   // Calculate Product Performance
   const productPerformance = analyzeProductSales(posData, inventoryData);
   
-  // Inventory Risk Analysis
+  // Inventory Risk & Expiry Analysis
   let outOfStockCount = 0;
   let lowStockCount = 0;
+  let expiringItemsCount = 0;
 
-  inventoryData.forEach((item: any) => {
+  const referenceDate = new Date('2026-08-09').getTime();
+
+  inventoryData.forEach((item: any, idx: number) => {
     const currentStock = parseFloat(item.currentStock) || 0;
     const reorderLevel = parseFloat(item.reorderLevel) || 0;
     const unitCost = parseFloat(item.unitCost) || 0;
     const matchedProduct = productPerformance.find(p => p.productId === item.productId);
     const estLoss = matchedProduct ? matchedProduct.totalRevenue / Math.max(1, matchedProduct.totalQuantity) * reorderLevel : unitCost * 10;
 
+    // Expiry Date Evaluation
+    if (item.expiryDate) {
+      const expTime = new Date(item.expiryDate).getTime();
+      if (!isNaN(expTime)) {
+        const daysLeft = Math.ceil((expTime - referenceDate) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 15 && currentStock > 0) {
+          expiringItemsCount++;
+          const recAmount = currentStock * unitCost * 0.6;
+          problems.push({
+            id: `prob-expiry-critical-${item.productId}-${idx}`,
+            type: 'expiry',
+            severity: 'high',
+            title: `CRITICAL EXPIRY RISK: ${item.productName}`,
+            description: `${item.productName} (${currentStock} units) expires in ${daysLeft} days (${item.expiryDate}). Without intervention, stock value of ₹${(currentStock * unitCost).toLocaleString('en-IN')} will be lost.`,
+            financialImpact: `Estimated capital recovery: ~₹${recAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })} via 40% Flash Discount`,
+            affectedProducts: [item.productId],
+            recommendation: `Apply 40% Flash Clearance Discount immediately on POS to liquidate stock before expiry date.`,
+            recommendedDiscount: 40,
+            actionSteps: [
+              `Apply 40% clearance discount flag on store POS terminals`,
+              `Place promotional end-cap banner near store entrance`,
+              `Send push notification or SMS alert to local loyalty members`
+            ],
+            timestamp: new Date().toISOString(),
+          });
+        } else if (daysLeft > 15 && daysLeft <= 45 && currentStock > 0) {
+          expiringItemsCount++;
+          const recAmount = currentStock * unitCost * 0.8;
+          problems.push({
+            id: `prob-expiry-warning-${item.productId}-${idx}`,
+            type: 'expiry',
+            severity: 'medium',
+            title: `Near Expiry Warning: ${item.productName}`,
+            description: `${item.productName} (${currentStock} units on-hand) is approaching expiry in ${daysLeft} days (${item.expiryDate}).`,
+            financialImpact: `Estimated capital recovery: ~₹${recAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })} via 20% Bundle Discount`,
+            affectedProducts: [item.productId],
+            recommendation: `Apply 20% Promotional Bundle Discount with fast-moving complementary items.`,
+            recommendedDiscount: 20,
+            actionSteps: [
+              `Bundle item with high-volume Class-A products at 20% discount`,
+              `Monitor daily sell-through rate over next 7 days`
+            ],
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+    }
+
     if (currentStock === 0) {
       outOfStockCount++;
       problems.push({
-        id: `prob-stockout-${item.productId}`,
+        id: `prob-stockout-${item.productId}-${idx}`,
         type: 'inventory',
         severity: 'high',
         title: `CRITICAL: Stockout on ${item.productName}`,
@@ -92,7 +209,7 @@ export function analyzeBusinessData(
     } else if (currentStock <= reorderLevel) {
       lowStockCount++;
       problems.push({
-        id: `prob-lowstock-${item.productId}`,
+        id: `prob-lowstock-${item.productId}-${idx}`,
         type: 'inventory',
         severity: 'medium',
         title: `Low Stock Warning: ${item.productName}`,
@@ -118,10 +235,10 @@ export function analyzeBusinessData(
 
   const avgRevenue = storePerformance.length > 0 ? totalRevenue / storePerformance.length : 0;
 
-  storePerformance.forEach((store) => {
+  storePerformance.forEach((store, idx) => {
     if (store.profitMargin < 15 && store.totalRevenue > 0) {
       problems.push({
-        id: `prob-margin-${store.storeId}`,
+        id: `prob-margin-${store.storeId}-${idx}`,
         type: 'profitability',
         severity: 'high',
         title: `Low Profit Margin at ${store.storeName}`,
@@ -139,7 +256,7 @@ export function analyzeBusinessData(
 
     if (store.totalRevenue < avgRevenue * 0.7 && storePerformance.length > 1) {
       problems.push({
-        id: `prob-underperform-${store.storeId}`,
+        id: `prob-underperform-${store.storeId}-${idx}`,
         type: 'store',
         severity: 'medium',
         title: `Underperforming Store: ${store.storeName}`,
@@ -153,7 +270,7 @@ export function analyzeBusinessData(
 
     if (store.growthRate > 0.15) {
       opportunities.push({
-        id: `opp-growth-${store.storeId}`,
+        id: `opp-growth-${store.storeId}-${idx}`,
         type: 'opportunity',
         severity: 'high',
         title: `High Growth Store: ${store.storeName}`,
@@ -231,6 +348,7 @@ export function analyzeBusinessData(
     totalUnitsSold,
     outOfStockCount,
     lowStockCount,
+    expiringItemsCount,
     problems,
     opportunities,
     trends,
@@ -278,6 +396,13 @@ export function analyzeStorePerformance(
     store.totalProfit += profit;
     store.totalSales += quantity;
     store.transactions += 1;
+
+    if (store.latitude === undefined && row.latitude !== undefined && !isNaN(parseFloat(row.latitude))) {
+      store.latitude = parseFloat(row.latitude);
+    }
+    if (store.longitude === undefined && row.longitude !== undefined && !isNaN(parseFloat(row.longitude))) {
+      store.longitude = parseFloat(row.longitude);
+    }
 
     if (row.category) {
       store.categories.set(row.category, (store.categories.get(row.category) || 0) + revenue);
@@ -343,8 +468,6 @@ function calculateGrowthRate(posData: any[], storeId: string): number {
   return (secondRevenue - firstRevenue) / firstRevenue;
 }
 
-// Smart Sales Aggregator: If data spans multiple months, group by Month (YYYY-MM).
-// If all data is within 1 single month, group by Date (YYYY-MM-DD) so a trend curve is rendered!
 export function calculateMonthlySales(posData: any[]): any[] {
   const monthKeys = new Set<string>();
   posData.forEach((row) => {
@@ -365,7 +488,7 @@ export function calculateMonthlySales(posData: any[]): any[] {
     if (isNaN(date.getTime())) return;
 
     const key = isSingleMonth
-      ? row.date // Group by exact date (e.g. 2026-08-01, 2026-08-02)
+      ? row.date
       : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
     const revenue = parseFloat(row.revenue) || 0;
@@ -437,6 +560,7 @@ export function analyzeCategoryPerformance(
 
 export function analyzeProductSales(posData: any[], inventoryData: any[]): ProductPerformance[] {
   const productMap = new Map<string, any>();
+  const referenceDate = new Date('2026-08-09').getTime();
 
   // Map inventory data first
   const invMap = new Map<string, any>();
@@ -489,6 +613,26 @@ export function analyzeProductSales(posData: any[], inventoryData: any[]): Produ
 
     const currentStock = inv ? parseFloat(inv.currentStock) || 0 : undefined;
     const reorderLevel = inv ? parseFloat(inv.reorderLevel) || 0 : undefined;
+    const expiryDate = inv?.expiryDate || undefined;
+    
+    let daysToExpiry: number | undefined = undefined;
+    let recommendedDiscount: number | undefined = undefined;
+    let expiryStatus: 'fresh' | 'expiring_soon' | 'critical_expiry' = 'fresh';
+
+    if (expiryDate) {
+      const expTime = new Date(expiryDate).getTime();
+      if (!isNaN(expTime)) {
+        daysToExpiry = Math.ceil((expTime - referenceDate) / (1000 * 60 * 60 * 24));
+        if (daysToExpiry <= 15) {
+          expiryStatus = 'critical_expiry';
+          recommendedDiscount = 40;
+        } else if (daysToExpiry <= 45) {
+          expiryStatus = 'expiring_soon';
+          recommendedDiscount = 20;
+        }
+      }
+    }
+
     const dailyAvgSales = prd.totalQuantity / 30;
     const daysOfSupply = currentStock !== undefined && dailyAvgSales > 0 ? Math.round(currentStock / dailyAvgSales) : undefined;
 
@@ -506,8 +650,12 @@ export function analyzeProductSales(posData: any[], inventoryData: any[]): Produ
       currentStock,
       reorderLevel,
       daysOfSupply,
+      expiryDate,
+      daysToExpiry,
+      recommendedDiscount,
       abcClass,
       stockStatus,
+      expiryStatus,
     };
   });
 }
@@ -520,7 +668,247 @@ function generateSummary(
   totalProfit: number
 ): string {
   const highSeverityCount = problems.filter((p) => p.severity === 'high').length;
+  const expiryRiskCount = problems.filter((p) => p.type === 'expiry').length;
   const margin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0';
 
-  return `InsightOS Analysis Complete across ${stores.length} active stores. Total Revenue: ₹${totalRevenue.toLocaleString('en-IN')} with a ${margin}% net margin (₹${totalProfit.toLocaleString('en-IN')} profit). Detected ${problems.length} operational issues (${highSeverityCount} high severity) and ${opportunities.length} growth opportunities.`;
+  return `InsightOS Analysis Complete across ${stores.length} active stores. Total Revenue: ₹${totalRevenue.toLocaleString('en-IN')} with a ${margin}% net margin (₹${totalProfit.toLocaleString('en-IN')} profit). Detected ${problems.length} operational issues (${highSeverityCount} high severity, ${expiryRiskCount} expiring stock alerts) and ${opportunities.length} growth opportunities.`;
 }
+
+export interface DailyHistoryData {
+  date: string;
+  totalRevenue: number;
+  totalCost: number;
+  totalProfit: number;
+  profitMargin: number;
+  totalUnitsSold: number;
+  transactionCount: number;
+  activeStoresCount: number;
+  transactions: any[];
+  inventoryRestocks: any[];
+  expiringItems: any[];
+}
+
+export function getDailyHistory(
+  posData: any[],
+  inventoryData: any[],
+  targetDate: string
+): DailyHistoryData {
+  const filteredPOS = posData.filter((r) => r.date === targetDate);
+
+  let totalRevenue = 0;
+  let totalCost = 0;
+  let totalUnitsSold = 0;
+  const storesSet = new Set<string>();
+
+  const transactions = filteredPOS.map((r, idx) => {
+    const revenue = parseFloat(r.revenue) || 0;
+    const quantity = parseFloat(r.quantity) || 0;
+    const unitCost = r.unitCost
+      ? parseFloat(r.unitCost)
+      : (inventoryData.find(i => i.productId === r.productId)?.unitCost || 0);
+    const cost = unitCost * quantity;
+    const profit = revenue - cost;
+
+    totalRevenue += revenue;
+    totalCost += cost;
+    totalUnitsSold += quantity;
+    if (r.storeId) storesSet.add(r.storeId);
+
+    return {
+      id: `tx-${targetDate}-${idx}`,
+      time: '14:30', // Default operational timestamp
+      storeName: r.storeName || r.storeId || 'Main Store',
+      productName: r.productName || r.productId,
+      category: r.category || 'General',
+      quantity,
+      revenue,
+      unitCost,
+      cost,
+      profit,
+      profitMargin: revenue > 0 ? (profit / revenue) * 100 : 0,
+    };
+  });
+
+  const totalProfit = totalRevenue - totalCost;
+  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+  // Inventory restocked or expiring on or near target date
+  const inventoryRestocks = inventoryData.filter(i => i.lastRestocked === targetDate);
+  const expiringItems = inventoryData.filter(i => i.expiryDate === targetDate || (i.expiryDate && i.expiryDate.startsWith(targetDate.substring(0, 7))));
+
+  return {
+    date: targetDate,
+    totalRevenue,
+    totalCost,
+    totalProfit,
+    profitMargin,
+    totalUnitsSold,
+    transactionCount: filteredPOS.length,
+    activeStoresCount: storesSet.size,
+    transactions,
+    inventoryRestocks,
+    expiringItems,
+  };
+}
+
+export interface SeasonalTrendRecommendation {
+  seasonOrFestival: string;
+  timeframe: string;
+  status: 'upcoming' | 'active';
+  suggestedProducts: string[];
+  rationale: string;
+  expectedDemandIncrease: string;
+  actionItems: string[];
+}
+
+export function getSeasonalTrendsAndRecommendations(): SeasonalTrendRecommendation[] {
+  return [
+    {
+      seasonOrFestival: 'Diwali & Festival Season (Deepavali)',
+      timeframe: 'October - November',
+      status: 'upcoming',
+      suggestedProducts: [
+        'Premium Mithai & Gourmet Sweet Boxes',
+        'Decorative LED Rice Lights & Brass Diyas',
+        'Traditional Ethnic Wear & Silk Apparel',
+        'Dry Fruit & Nut Gift Hampers',
+        'Smart Home Appliances & TVs (Diwali Offers)',
+      ],
+      rationale: 'Diwali is India’s largest retail shopping festival. Retail sales spike up to 250% across electronics, fashion, home decor, and confectionery.',
+      expectedDemandIncrease: '+180% to +250% Demand Surge',
+      actionItems: [
+        'Pre-order high-demand gift hampers & electronic appliances 45 days in advance',
+        'Set up dedicated festival display kiosks near store entrances',
+        'Launch "Diwali Early-Bird Cashback" promotions to capture early shoppers',
+      ],
+    },
+    {
+      seasonOrFestival: 'Monsoon Care & Rainy Season',
+      timeframe: 'July - September',
+      status: 'active',
+      suggestedProducts: [
+        'Waterproof Windcheaters & Raincoats',
+        'Anti-Skid Footwear & Rubber Boots',
+        'Herbal Green Tea & Immunity Kadha',
+        'UV Umbrella & Compact Foldable Umbrellas',
+        'Dehumidifier Packs & Moisture Absorbers',
+      ],
+      rationale: 'Heavy monsoon rains drive surge in weatherproof gear, hot beverages, immunity supplements, and indoor comfort items.',
+      expectedDemandIncrease: '+85% Demand Surge in Grocery & Apparel',
+      actionItems: [
+        'Place umbrella stands & rain gear prominently at store entrance',
+        'Create a "Monsoon Wellness & Tea Combo" promotional bundle',
+      ],
+    },
+    {
+      seasonOrFestival: 'Dussehra & Navratri Festival',
+      timeframe: 'September - October',
+      status: 'upcoming',
+      suggestedProducts: [
+        'Navratri Fasting Snacks (Sabudana, Makhana, Rock Salt)',
+        'Traditional Garba Apparel & Accessories',
+        'Pooja Thali Sets & Incense Packs',
+        'Consumer Electronics festive bundles',
+      ],
+      rationale: '9-day festive period with high consumer spending on traditional items, fasting foods, and new purchases.',
+      expectedDemandIncrease: '+120% Demand Surge',
+      actionItems: [
+        'Stock up on certified organic fasting ingredients',
+        'Offer festive combo discounts on apparel and puja essentials',
+      ],
+    },
+    {
+      seasonOrFestival: 'New Year & Winter Fitness Season',
+      timeframe: 'December - January',
+      status: 'upcoming',
+      suggestedProducts: [
+        'Smart Fitness Watches & Bands',
+        'Protein Powders & Energy Bars',
+        'Premium Woolen Jackets & Thermal Wear',
+        'Party Confectionery & Sparkling Juices',
+      ],
+      rationale: 'End of year celebrations followed by New Year health & fitness resolution spike.',
+      expectedDemandIncrease: '+95% Demand Surge',
+      actionItems: [
+        'Create New Year Fitness Starter Bundles (Watch + Shaker + Protein)',
+        'Clear out winter apparel stock before mid-February',
+      ],
+    },
+  ];
+}
+
+export interface DiscountRecommendation {
+  productId: string;
+  productName: string;
+  category: string;
+  reason: 'slow_moving' | 'near_expiry' | 'excess_stock';
+  currentStock: number;
+  expiryDate?: string;
+  daysToExpiry?: number;
+  suggestedDiscountPct: number;
+  promoDescription: string;
+  estimatedRevenueGain: number;
+}
+
+export function getPromotionalDiscountRecommendations(
+  posData: any[],
+  inventoryData: any[]
+): DiscountRecommendation[] {
+  const recommendations: DiscountRecommendation[] = [];
+  const referenceDate = new Date('2026-08-09').getTime();
+
+  // Group POS quantity per product
+  const salesMap = new Map<string, number>();
+  posData.forEach(r => {
+    if (r.productId) {
+      salesMap.set(r.productId, (salesMap.get(r.productId) || 0) + (parseFloat(r.quantity) || 0));
+    }
+  });
+
+  inventoryData.forEach(inv => {
+    const stock = parseFloat(inv.currentStock) || 0;
+    const sold = salesMap.get(inv.productId) || 0;
+    const unitCost = parseFloat(inv.unitCost) || 0;
+
+    // 1. Check near expiry items
+    if (inv.expiryDate) {
+      const expTime = new Date(inv.expiryDate).getTime();
+      if (!isNaN(expTime)) {
+        const daysLeft = Math.ceil((expTime - referenceDate) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 30 && stock > 0) {
+          const discountPct = daysLeft <= 10 ? 40 : 25;
+          recommendations.push({
+            productId: inv.productId,
+            productName: inv.productName,
+            category: inv.category || 'General',
+            reason: 'near_expiry',
+            currentStock: stock,
+            expiryDate: inv.expiryDate,
+            daysToExpiry: daysLeft,
+            suggestedDiscountPct: discountPct,
+            promoDescription: `Flash Clearance: ${discountPct}% OFF to sell ${stock} units before expiry in ${daysLeft} days!`,
+            estimatedRevenueGain: Math.round(stock * unitCost * (1 - discountPct / 100) * 1.5),
+          });
+          return;
+        }
+      }
+    }
+
+    // 2. Check slow moving / high stock items
+    if (stock >= 30 && sold <= 15) {
+      recommendations.push({
+        productId: inv.productId,
+        productName: inv.productName,
+        category: inv.category || 'General',
+        reason: 'slow_moving',
+        currentStock: stock,
+        suggestedDiscountPct: 20,
+        promoDescription: `Slow-Moving Promo: 20% OFF or Buy-1-Get-1-at-50%-Off to accelerate sell-through.`,
+        estimatedRevenueGain: Math.round(stock * unitCost * 1.2),
+      });
+    }
+  });
+
+  return recommendations;
+}
+

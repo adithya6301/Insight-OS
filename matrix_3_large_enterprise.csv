@@ -1,0 +1,26 @@
+date,storeId,storeName,productId,productName,category,quantity,revenue,unitCost,latitude,longitude
+2026-08-01,STR-301,Mumbai Central MegaStore,PRD-301,Pro Wireless Headphones,Electronics,25,74975,1650,18.9696,72.8193
+2026-08-01,STR-302,Delhi CP Enterprise,PRD-302,Ultra HD Smart TV 65",Electronics,8,479992,32000,28.6315,77.2167
+2026-08-01,STR-303,Bengaluru Tech Park,PRD-303,Motorized Standing Desk,Furniture,10,299990,16800,12.9716,77.5946
+2026-08-02,STR-304,Hyderabad Hitech City,PRD-304,Mechanical RGB Keyboard,Electronics,30,83970,1300,17.4435,78.3772
+2026-08-02,STR-305,Chennai Express Hub,PRD-305,UV Designer Sunglasses,Accessories,50,149950,800,13.0604,80.2642
+2026-08-02,STR-306,Pune Phoenix Mall,PRD-306,Organic Filter Coffee 1kg,Grocery,40,23960,240,18.5204,73.8567
+2026-08-03,STR-307,Kolkata Salt Lake,PRD-307,Herbal Green Tea 500g,Grocery,60,35940,210,22.5726,88.3639
+2026-08-03,STR-308,Ahmedabad SG Highway,PRD-308,Stainless Thermos Bottle,Accessories,80,40000,160,23.0225,72.5714
+2026-08-03,STR-309,Jaipur PinkCity Outlet,PRD-309,Premium Wool Coat,Apparel,5,29995,2800,26.9124,75.7873
+2026-08-04,STR-310,Chandigarh Elante Mall,PRD-310,Pro Running Sneakers,Apparel,12,33596,1200,30.7363,76.7885
+2026-08-04,STR-301,Mumbai Central MegaStore,PRD-302,Ultra HD Smart TV 65",Electronics,6,359994,32000,18.9696,72.8193
+2026-08-04,STR-302,Delhi CP Enterprise,PRD-301,Pro Wireless Headphones,Electronics,20,59980,1650,28.6315,77.2167
+2026-08-05,STR-303,Bengaluru Tech Park,PRD-304,Mechanical RGB Keyboard,Electronics,25,69975,1300,12.9716,77.5946
+2026-08-05,STR-304,Hyderabad Hitech City,PRD-303,Motorized Standing Desk,Furniture,8,239992,16800,17.4435,78.3772
+2026-08-05,STR-305,Chennai Express Hub,PRD-308,Stainless Thermos Bottle,Accessories,75,37500,160,13.0604,80.2642
+2026-08-06,STR-306,Pune Phoenix Mall,PRD-307,Herbal Green Tea 500g,Grocery,45,26955,210,18.5204,73.8567
+2026-08-06,STR-307,Kolkata Salt Lake,PRD-305,UV Designer Sunglasses,Accessories,40,119960,800,22.5726,88.3639
+2026-08-06,STR-308,Ahmedabad SG Highway,PRD-306,Organic Filter Coffee 1kg,Grocery,50,29950,240,23.0225,72.5714
+2026-08-07,STR-309,Jaipur PinkCity Outlet,PRD-310,Pro Running Sneakers,Apparel,15,41995,1200,26.9124,75.7873
+2026-08-07,STR-310,Chandigarh Elante Mall,PRD-309,Premium Wool Coat,Apparel,8,47992,2800,30.7363,76.7885
+2026-08-08,STR-301,Mumbai Central MegaStore,PRD-303,Motorized Standing Desk,Furniture,12,359988,16800,18.9696,72.8193
+2026-08-08,STR-302,Delhi CP Enterprise,PRD-304,Mechanical RGB Keyboard,Electronics,35,97965,1300,28.6315,77.2167
+2026-08-09,STR-303,Bengaluru Tech Park,PRD-301,Pro Wireless Headphones,Electronics,30,89970,1650,12.9716,77.5946
+2026-08-09,STR-304,Hyderabad Hitech City,PRD-305,UV Designer Sunglasses,Accessories,60,179940,800,17.4435,78.3772
+2026-08-09,STR-305,Chennai Express Hub,PRD-306,Organic Filter Coffee 1kg,Grocery,55,32945,240,13.0604,80.2642

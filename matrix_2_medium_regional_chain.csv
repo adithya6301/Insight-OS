@@ -1,0 +1,19 @@
+date,storeId,storeName,productId,productName,category,quantity,revenue,unitCost,latitude,longitude
+2026-08-01,STR-201,Mumbai Central Flagship,PRD-101,Pro Wireless Noise-Canceling Headphones,Electronics,14,41986,1650,18.9696,72.8193
+2026-08-01,STR-201,Mumbai Central Flagship,PRD-102,Ultra HD Smart TV 55 inch,Electronics,4,179996,25000,18.9696,72.8193
+2026-08-02,STR-201,Mumbai Central Flagship,PRD-103,Smart Fitness Watch Series 5,Electronics,22,87978,1800,18.9696,72.8193
+2026-08-02,STR-202,Bengaluru HSR Tech Hub,PRD-104,Motorized Standing Desk,Furniture,6,179994,16800,12.9716,77.5946
+2026-08-03,STR-202,Bengaluru HSR Tech Hub,PRD-105,Ergonomic Mesh Office Chair,Furniture,12,143988,7200,12.9716,77.5946
+2026-08-03,STR-202,Bengaluru HSR Tech Hub,PRD-106,Mechanical RGB Gaming Keyboard,Electronics,18,50382,1300,12.9716,77.5946
+2026-08-04,STR-203,Chennai T.Nagar Outlet,PRD-107,UV Designer Sunglasses,Accessories,30,89970,800,13.0604,80.2642
+2026-08-04,STR-203,Chennai T.Nagar Outlet,PRD-108,Stainless Steel Thermos Bottle 1L,Accessories,45,22500,160,13.0604,80.2642
+2026-08-05,STR-203,Chennai T.Nagar Outlet,PRD-109,Premium Wool Winter Jacket,Apparel,10,59990,2800,13.0604,80.2642
+2026-08-05,STR-201,Mumbai Central Flagship,PRD-101,Pro Wireless Noise-Canceling Headphones,Electronics,10,29990,1650,18.9696,72.8193
+2026-08-06,STR-202,Bengaluru HSR Tech Hub,PRD-103,Smart Fitness Watch Series 5,Electronics,15,59985,1800,12.9716,77.5946
+2026-08-06,STR-203,Chennai T.Nagar Outlet,PRD-107,UV Designer Sunglasses,Accessories,25,74975,800,13.0604,80.2642
+2026-08-07,STR-201,Mumbai Central Flagship,PRD-102,Ultra HD Smart TV 55 inch,Electronics,3,134997,25000,18.9696,72.8193
+2026-08-07,STR-202,Bengaluru HSR Tech Hub,PRD-106,Mechanical RGB Gaming Keyboard,Electronics,14,39186,1300,12.9716,77.5946
+2026-08-08,STR-203,Chennai T.Nagar Outlet,PRD-108,Stainless Steel Thermos Bottle 1L,Accessories,50,25000,160,13.0604,80.2642
+2026-08-08,STR-201,Mumbai Central Flagship,PRD-103,Smart Fitness Watch Series 5,Electronics,18,71982,1800,18.9696,72.8193
+2026-08-09,STR-202,Bengaluru HSR Tech Hub,PRD-104,Motorized Standing Desk,Furniture,4,119996,16800,12.9716,77.5946
+2026-08-09,STR-203,Chennai T.Nagar Outlet,PRD-109,Premium Wool Winter Jacket,Apparel,12,71988,2800,13.0604,80.2642
